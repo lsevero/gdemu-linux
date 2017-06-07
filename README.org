@@ -1,6 +1,5 @@
 #+TITLE:       GDemu for Linux
-#+AUTHOR:      Lucas Severo
-#+ORIGINAL AUTHOR:      Paul Morelle
+#+AUTHOR:      Lucas Severo, Paul Morelle
 #+EMAIL:       lucas.severo  `AT` aluno.ufabc.edu.br
 #+DATE:        2017-06-07
 #+DESCRIPTION: Gameduino Emulator for Linux
