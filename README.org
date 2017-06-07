@@ -1,20 +1,22 @@
 #+TITLE:       GDemu for Linux
-#+AUTHOR:      Paul Morelle
-#+EMAIL:       madprog@htkc.org
-#+DATE:        2012-04-25
+#+AUTHOR:      Lucas Severo
+#+ORIGINAL AUTHOR:      Paul Morelle
+#+EMAIL:       lucas.severo  `AT` aluno.ufabc.edu.br
+#+DATE:        2017-06-07
 #+DESCRIPTION: Gameduino Emulator for Linux
 #+KEYWORDS:    gameduino emulator linux
-#+LANGUAGE:    en
+#+LANGUAGE:    en, pt_BR
 #+OPTIONS:     H:3 num:t toc:2 \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
 #+OPTIONS:     TeX:t LaTeX:nil skip:nil d:nil todo:nil pri:nil tags:not-in-toc
 #+EXPORT_EXCLUDE_TAGS: exclude
 #+STARTUP:     showall
 
  | Status:   | Under Development                          |
- | Location: | [[https://github.com/madprog/gdemu-linux]] |
- | Version:  | 0.0.1                                      |
+ | Location: | [[https://github.com/lsevero/gdemu-linux]] |
+ | Version:  | 0.0.2                                      |
 
-* Description
+Description
+-----------
 
   [[http://excamera.com/sphinx/gameduino/][Gameduino]] is a game adapter for Arduino.
   The only problem is when you don't have any VGA screen around to display what you have programmed.
@@ -22,14 +24,44 @@
   The goal of GDemu for Linux is to provide the GD library with a SDL display, on your development machine.
   Then, you don't need any screen connected to your Gameduino board. You don't even need your arduino connected.
 
-* Usage
+  This fork adds some features, it has implemented some not implemented functions and keyboard input on the computer.
+  The input library mimics the "Keypad.h" Arduino library, it is pretty famous and also does some multiplexing on the inputs saving some pins, really nice.
+  You probably will not need to modify your code from the arduino version to the emulator one, however keep in mind that the pc Keypad.h is a subset of the original and it was made to keep the compatibility with the arduino version. To use in this emulator just define the keys and instanciate the class like you would in the arduino version:
+
+#+BEGIN_SRC
+//Define it
+const char ROWS = 4 ; // Four rows
+const char COLS = 4; // Three columns
+
+char rowPins[ROWS] = {ROW0,ROW1,ROW2, ROW3};
+char colPins[COLS] = {COL0, COL1, COL2, COL3};
+
+//these will be the buttons of the keyboard the program will read
+char keys[ROWS][COLS]={
+  {'a','w','s','d'},//wasd arrows
+  {'h','k','j','l'},//VIM arrows
+  {'1','2','3','4'},
+  {'5','6','7','8'}
+};
+
+Keypad player = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
+//Read the keys
+  player.getKeys();
+  if(player.bitMap[0]&1) ....;
+#+END_SRC
+
+  Read the RunWalter.cpp from examples for more details.
+
+Usage
+-----
 
   GDemu for Linux is compiled with [[http://cmake.org][CMake]] as a static library.
   You should be able to build your project without source code modification.
 
   - First, clone the source code:
 #+BEGIN_SRC
-$ git clone git://github.com/madprog/gdemu-linux.git
+$ git clone git://github.com/lsevero/gdemu-linux.git
 #+END_SRC
   - Make sure you have CMake, SDL, Make and G++ installed on your system. On Ubuntu or Debian:
 #+BEGIN_SRC
@@ -55,9 +87,8 @@ $ ./my_project
   - ...
   - PROFIT!
 
-* Issues
+Issues
+------
 
-  If your project does not compile with GDemu for Linux, then you may be using an API which have not been developed yet.
-  Please fork the project and add what you need in your branch: I would pull and merge your work.
-
-  If the result in the SDL window differs from what you get with your Gameduino, this is a bug (and you should fill an issue if the bug is unknown).
+* Weird behaviour with xsprite function, better use the sprite function for now.
+* No sound... yet.

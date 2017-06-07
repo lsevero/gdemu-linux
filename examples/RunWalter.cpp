@@ -58,6 +58,8 @@ char keys[ROWS][COLS]={
   {'5','6','7','8'}
 };
 
+Keypad player = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+
 /*VERDE PINO 0
   {'P1 - LEFT','P1 - DOWN','P1 - UP','P1 - RIGHT'},    
   {P2-LEFT,P2-DOWN,P2-UP',P2-RIGHT},   
@@ -65,7 +67,6 @@ char keys[ROWS][COLS]={
   {'P2-GREEN_RIGHT','P2-BLUE','P1-GREEN_LEFT','P2 - RED'},    
   */
 
-Keypad player = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 
 struct WalterWhite{
@@ -109,7 +110,7 @@ void mostraSprite()
 
 void loop()
 {
-  char key = player.getKey();  
+  player.getKeys();
   if(player.P1_LEFT)W1.x--;
   if(player.P1_DOWN)W1.y--;
   if(player.P1_UP)W1.y++;
