@@ -29,6 +29,8 @@ extern HardwareSPI SPI;
 #include <string.h>
 #endif
 
+unsigned long long millis();
+
 struct sprplot
 {
   char x, y;
@@ -69,6 +71,7 @@ public:
 
   void __wstartspr(unsigned int spr = 0);
   void xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot = 0, byte jk = 0);
+
   void xhide();
   void plots(int ox, int oy, sprplot *psp, byte count, byte rot, byte jk);
 

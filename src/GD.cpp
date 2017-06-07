@@ -1,13 +1,21 @@
-#include <SDL.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <time.h>
+extern "C"{
+    #include <SDL.h>
+    #include <X11/Xlib.h>
+    #include <pthread.h>
+    #include <unistd.h>
+    #include <time.h>
+}
+#include <thread>
+#include <functional>
+#include <chrono>
 
 #include "SPI.h"
 #include "GD.h"
 
 #define RAM_SIZE 0x8000
 static byte RAM[RAM_SIZE];
+
+GDClass GD;
 
 #define WINDOW_WIDTH 400
 #define WINDOW_HEIGHT 300
@@ -77,6 +85,10 @@ void GDClass::copy(unsigned int addr, prog_uchar *src, int count) {
   memcpy(RAM + addr, src, count);
 }
 
+void GDClass::uncompress(unsigned int addr, prog_uchar *src){
+    GD.copy(addr, src, sizeof(src));
+}
+
 void GDClass::fill(int addr, byte v, unsigned int count) {
   addr %= RAM_SIZE;
   if(addr + count > RAM_SIZE) count = RAM_SIZE - addr;
@@ -140,6 +152,54 @@ void GDClass::sprite(int spr, int x, int y, byte image, byte palette, byte rot, 
   sprite_ptr[2] = y & 0x00ff;
   sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((y & 0x0100) >> 8);
 }
+
+/////////////////////////////
+//void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk){
+  //byte *sprite_ptr = RAM + RAM_SPR + 4 * spr;
+  //if (rot & 2)
+    //x = -16-x;
+  //if (rot & 4)
+    //y = -16-y;
+  //if (rot & 1) {
+      //int s;
+      //s = x; x = y; y = s;
+  //}
+  //ox += x;
+  //oy += y;
+  //sprite_ptr[0] = ox & 0x00ff;
+  //sprite_ptr[1] = ((palette & 0x0f) << 4) | ((rot & 0x07) << 1) | ((ox & 0x0100) >> 8);
+  //sprite_ptr[2] = oy & 0x00ff;
+  //sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((oy & 0x0100) >> 8);
+  //spr++;
+//}
+void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk)
+{
+  if (rot & 2)
+    x = -16-x;
+  if (rot & 4)
+    y = -16-y;
+  if (rot & 1) {
+      int s;
+      s = x; x = y; y = s;
+  }
+  ox += x;
+  oy += y;
+  SPI.transfer(lowByte(ox));
+  SPI.transfer((palette << 4) | (rot << 1) | (highByte(ox) & 1));
+  SPI.transfer(lowByte(oy));
+  SPI.transfer((jk << 7) | (image << 1) | (highByte(oy) & 1));
+  spr++;
+}
+
+void GDClass::xhide()
+{
+  SPI.transfer(lowByte(400));
+  SPI.transfer(highByte(400));
+  SPI.transfer(lowByte(400));
+  SPI.transfer(highByte(400));
+  spr++;
+}
+/////////////////////////////
 
 void redraw_background(SDL_Surface *surface) {
   int min_x = (RAM[SCROLL_X] | ((RAM[SCROLL_X + 1] & 0x01) << 8)) >> 3;
@@ -296,9 +356,26 @@ void redraw_sprites(SDL_Surface *surface) {
   }
 }
 
-byte thread_do_exit = 0;
 pthread_mutex_t thread_running = PTHREAD_MUTEX_INITIALIZER;
+
+unsigned long long count_millis = 0;
+
+unsigned long long millis(){
+    return count_millis;
+}
+
+void increment_millis_count(){
+    std::chrono::milliseconds sleepDuration(1);
+    while(true){
+        count_millis++;
+        std::this_thread::sleep_for(sleepDuration);
+    }
+}
+
+char thread_do_exit = 0;
+
 void *thread_proc(void *unused) {
+  std::thread t(increment_millis_count);
   setup();
 
   while(!thread_do_exit) {
@@ -311,6 +388,7 @@ void *thread_proc(void *unused) {
   return NULL;
 }
 
+
 int main() {
   const struct timespec sleep_time = { 0, 13888888 }; // 72 Hz
   struct timespec start_date, end_date;
@@ -320,6 +398,8 @@ int main() {
   pthread_t thread;
 
   memset(RAM, 0, RAM_SIZE);
+
+  XInitThreads();
 
   SDL_Init(SDL_INIT_VIDEO);
   SDL_SetVideoMode(WINDOW_WIDTH * WINDOW_ZOOM, WINDOW_HEIGHT * WINDOW_ZOOM, 15, SDL_HWSURFACE|SDL_DOUBLEBUF);
@@ -331,12 +411,17 @@ int main() {
   while(!do_exit && pthread_mutex_trylock(&thread_running) != 0) {
     clock_gettime(CLOCK_REALTIME, &start_date);
 
-    while(SDL_PollEvent(&event)) {
-      switch(event.type) {
-        case SDL_QUIT:
-          thread_do_exit = 1;
-      }
-    }
+    //while(SDL_PollEvent(&event)) {
+      //switch(event.type) {
+        //case SDL_QUIT:
+          //thread_do_exit = 1;
+          //break;
+        //case SDL_KEYDOWN:
+          //if(event.key.keysym.sym==SDLK_ESCAPE)
+              //thread_do_exit = 1;
+          //break;
+      //}
+    //}
 
     RAM[VBLANK] = 1;
     if(pthread_mutex_trylock(&thread_running) != 0) {

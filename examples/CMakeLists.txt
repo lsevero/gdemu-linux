@@ -1,5 +1,7 @@
 include_directories(../include)
 
+set(CMAKE_CXX_FLAGS "-g -Wall")
+
 add_executable(scroll
 	scroll.cpp)
 target_link_libraries(scroll
@@ -24,3 +26,14 @@ add_executable(collision
 	collision.cpp)
 target_link_libraries(collision
 	gdemu)
+
+add_executable(mario_ufabc
+    mario_ufabc_final.cpp)
+target_link_libraries(mario_ufabc
+    gdemu)
+
+add_executable(RunWalter
+    RunWalter.cpp)
+target_link_libraries(RunWalter
+    gdemu
+    ${X11_LIBRARY})
