@@ -15,8 +15,7 @@
  | Location: | [[https://github.com/lsevero/gdemu-linux]] |
  | Version:  | 0.0.2                                      |
 
-Description
------------
+* Description
 
   [[http://excamera.com/sphinx/gameduino/][Gameduino]] is a game adapter for Arduino.
   The only problem is when you don't have any VGA screen around to display what you have programmed.
@@ -53,8 +52,7 @@ Keypad player = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
   Read the RunWalter.cpp from examples for more details.
 
-Usage
------
+* Usage
 
   GDemu for Linux is compiled with [[http://cmake.org][CMake]] as a static library.
   You should be able to build your project without source code modification.
@@ -87,8 +85,7 @@ $ ./my_project
   - ...
   - PROFIT!
 
-Issues
-------
+* Issues
 
-* Weird behaviour with xsprite function, better use the sprite function for now.
-* No sound... yet.
+  - Weird behaviour with xsprite function, better use the sprite function for now.
+  - No sound... yet.
