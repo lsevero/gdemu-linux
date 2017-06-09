@@ -1,16 +1,19 @@
 extern "C"{
     #include <SDL.h>
     #include <X11/Xlib.h>
-    #include <pthread.h>
     #include <unistd.h>
     #include <time.h>
 }
 #include <thread>
+#include <mutex>
 #include <functional>
 #include <chrono>
+#include <csignal>
+#include <iostream>
 
 #include "SPI.h"
 #include "GD.h"
+#include "Globals.h"
 
 #define RAM_SIZE 0x8000
 static byte RAM[RAM_SIZE];
@@ -384,7 +387,7 @@ void redraw_sprites(SDL_Surface *surface) {
   }
 }
 
-pthread_mutex_t thread_running = PTHREAD_MUTEX_INITIALIZER;
+std::mutex thread_running;
 
 unsigned long long count_millis = 0;
 
@@ -400,22 +403,24 @@ void increment_millis_count(){
     }
 }
 
-char thread_do_exit = 0;
 
-void *thread_proc(void *unused) {
+void thread_proc() {
   std::thread t(increment_millis_count);
   setup();
 
-  while(!thread_do_exit) {
+  while(!Globals::instance().thread_do_exit) {
     loop();
     sleep(0);
   }
 
-  pthread_mutex_unlock(&thread_running);
-
-  return NULL;
+  thread_running.unlock();
 }
 
+void signalHandler( int signum ) {
+    std::cout << "Received signal number " << signum << ".\n";
+    std::cout << "Quitting...\n";
+    Globals::instance().thread_do_exit=1;
+}
 
 int main() {
   const struct timespec sleep_time = { 0, 13888888 }; // 72 Hz
@@ -423,36 +428,26 @@ int main() {
   byte do_exit = 0;
   SDL_Event event;
   SDL_Surface *surface;
-  pthread_t thread;
 
   memset(RAM, 0, RAM_SIZE);
+
+  signal(SIGINT,signalHandler);
+  signal(SIGTERM,signalHandler);
 
   XInitThreads();
 
   SDL_Init(SDL_INIT_VIDEO);
   SDL_SetVideoMode(WINDOW_WIDTH * WINDOW_ZOOM, WINDOW_HEIGHT * WINDOW_ZOOM, 15, SDL_HWSURFACE|SDL_DOUBLEBUF);
 
-  pthread_mutex_lock(&thread_running);
-  pthread_create(&thread, NULL, thread_proc, NULL);
+  thread_running.lock();
+  std::thread main_thread(thread_proc);
   sleep(0);
 
-  while(!do_exit && pthread_mutex_trylock(&thread_running) != 0) {
+  while(!do_exit && thread_running.try_lock() != true) {
     clock_gettime(CLOCK_REALTIME, &start_date);
 
-    //while(SDL_PollEvent(&event)) {
-      //switch(event.type) {
-        //case SDL_QUIT:
-          //thread_do_exit = 1;
-          //break;
-        //case SDL_KEYDOWN:
-          //if(event.key.keysym.sym==SDLK_ESCAPE)
-              //thread_do_exit = 1;
-          //break;
-      //}
-    //}
-
     RAM[VBLANK] = 1;
-    if(pthread_mutex_trylock(&thread_running) != 0) {
+    if(thread_running.try_lock() != true) {
       surface = SDL_GetVideoSurface();
 
       SDL_LockSurface(surface);
@@ -462,7 +457,7 @@ int main() {
 
       SDL_Flip(surface);
     } else {
-      pthread_mutex_unlock(&thread_running);
+      thread_running.unlock();
       do_exit = 1;
     }
 
@@ -493,10 +488,10 @@ int main() {
   }
 
   if(!do_exit) {
-    pthread_mutex_unlock(&thread_running);
+    thread_running.unlock();
   }
 
-  pthread_join(thread, NULL);
+  main_thread.join();
 
   GD.end();
 }

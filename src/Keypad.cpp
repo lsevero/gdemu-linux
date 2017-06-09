@@ -19,6 +19,7 @@
 
 #include <cstdlib>
 #include "Keypad.h"
+#include "Globals.h"
 
 //userKeymap was fixed with 4 colums
 
@@ -56,7 +57,8 @@ void read_keys_loop(Keypad *k){
         if(SDL_PollEvent(&k->e)){
 
             if(k->e.type == SDL_QUIT){
-                exit(0);
+                //exit(0);
+                Globals::instance().thread_do_exit=1;
             }
 
             if(k->e.type == SDL_KEYDOWN){
