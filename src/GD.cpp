@@ -85,10 +85,6 @@ void GDClass::copy(unsigned int addr, prog_uchar *src, int count) {
   memcpy(RAM + addr, src, count);
 }
 
-/*void GDClass::uncompress(unsigned int addr, prog_uchar *src){
-    GD.copy(addr, src, sizeof(src));
-}*/
-
 class GDflashbits {
 public:
   void begin(prog_uchar *s) {
@@ -203,27 +199,6 @@ void GDClass::sprite(int spr, int x, int y, byte image, byte palette, byte rot, 
   sprite_ptr[2] = y & 0x00ff;
   sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((y & 0x0100) >> 8);
 }
-
-/*
-void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk){
-  byte *sprite_ptr = RAM + RAM_SPR + 4 * spr;
-  if (rot & 2)
-    x = -16-x;
-  if (rot & 4)
-    y = -16-y;
-  if (rot & 1) {
-      int s;
-      s = x; x = y; y = s;
-  }
-  ox += x;
-  oy += y;
-  sprite_ptr[0] = ox & 0x00ff;
-  sprite_ptr[1] = ((palette & 0x0f) << 4) | ((rot & 0x07) << 1) | ((ox & 0x0100) >> 8);
-  sprite_ptr[2] = oy & 0x00ff;
-  sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((oy & 0x0100) >> 8);
-  spr++;
-}
-*/
 
 void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk)
 {
@@ -525,3 +500,4 @@ int main() {
 
   GD.end();
 }
+
