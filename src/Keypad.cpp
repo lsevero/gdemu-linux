@@ -57,7 +57,6 @@ void read_keys_loop(Keypad *k){
         if(SDL_PollEvent(&k->e)){
 
             if(k->e.type == SDL_QUIT){
-                //exit(0);
                 Globals::instance().thread_do_exit=1;
             }
 
