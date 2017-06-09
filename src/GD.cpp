@@ -85,8 +85,55 @@ void GDClass::copy(unsigned int addr, prog_uchar *src, int count) {
   memcpy(RAM + addr, src, count);
 }
 
-void GDClass::uncompress(unsigned int addr, prog_uchar *src){
-    GD.copy(addr, src, sizeof(src));
+class GDflashbits {
+public:
+  void begin(prog_uchar *s) {
+    src = s;
+    mask = 0x01;
+  }
+  byte get1(void) {
+    byte r = (pgm_read_byte_near(src) & mask) != 0;
+    mask <<= 1;
+    if (!mask) {
+      mask = 1;
+      src++;
+    }
+    return r;
+  }
+  unsigned short getn(byte n) {
+    unsigned short r = 0;
+    while (n--) {
+      r <<= 1;
+      r |= get1();
+    }
+    return r;
+  }
+private:
+  prog_uchar *src;
+  byte mask;
+};
+
+static GDflashbits GDFB;
+
+void GDClass::uncompress(unsigned int addr, prog_uchar *src)
+{
+  GDFB.begin(src);
+  byte b_off = (byte)GDFB.getn(4);
+  byte b_len = (byte)GDFB.getn(4);
+  byte minlen = (byte)GDFB.getn(2);
+  unsigned short items = GDFB.getn(16);
+  while (items--) {
+    if (GDFB.get1() == 0) {
+      GD.wr(addr++, (byte)GDFB.getn(8));
+    } else {
+      int16_t offset = -GDFB.getn(b_off) - 1;
+      int16_t l = GDFB.getn(b_len) + minlen;
+      while (l--) {
+        GD.wr(addr, GD.rd(addr + offset));
+        addr++;
+      }
+    }
+  }
 }
 
 void GDClass::fill(int addr, byte v, unsigned int count) {
@@ -153,25 +200,6 @@ void GDClass::sprite(int spr, int x, int y, byte image, byte palette, byte rot, 
   sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((y & 0x0100) >> 8);
 }
 
-/////////////////////////////
-//void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk){
-  //byte *sprite_ptr = RAM + RAM_SPR + 4 * spr;
-  //if (rot & 2)
-    //x = -16-x;
-  //if (rot & 4)
-    //y = -16-y;
-  //if (rot & 1) {
-      //int s;
-      //s = x; x = y; y = s;
-  //}
-  //ox += x;
-  //oy += y;
-  //sprite_ptr[0] = ox & 0x00ff;
-  //sprite_ptr[1] = ((palette & 0x0f) << 4) | ((rot & 0x07) << 1) | ((ox & 0x0100) >> 8);
-  //sprite_ptr[2] = oy & 0x00ff;
-  //sprite_ptr[3] = ((jk & 0x01) << 7) | ((image & 0x3f) << 1) | ((oy & 0x0100) >> 8);
-  //spr++;
-//}
 void GDClass::xsprite(int ox, int oy, char x, char y, byte image, byte palette, byte rot, byte jk)
 {
   if (rot & 2)
@@ -472,3 +500,4 @@ int main() {
 
   GD.end();
 }
+
