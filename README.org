@@ -86,5 +86,4 @@ $ ./my_project
 
 * Issues
 
-  - Weird behaviour with xsprite function, better use the sprite function for now.
   - No sound... yet.
